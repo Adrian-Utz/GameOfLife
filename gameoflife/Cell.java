@@ -1,5 +1,7 @@
+package gameoflife;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.io.Serializable;
 
 /**
  * A square at a fixed location that changes color.
@@ -7,9 +9,10 @@ import java.awt.Graphics;
  * @author Chris Mayfield
  * @version 7.1.0
  */
-public class Cell {
+public class Cell implements Serializable {
 
-    public static final Color[] COLORS = {Color.WHITE, Color.BLACK};
+    private static final long serialVersionUID = 1L;
+    protected static final Color[] COLORS = {Color.WHITE, Color.BLACK};
 
     private final int x;
     private final int y;

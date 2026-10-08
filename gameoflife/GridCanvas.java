@@ -1,3 +1,4 @@
+package gameoflife;
 import java.awt.Canvas;
 import java.awt.Graphics;
 
@@ -8,6 +9,8 @@ import java.awt.Graphics;
  * @version 7.1.0
  */
 public class GridCanvas extends Canvas {
+
+    private static final long serialVersionUID = 1L;
 
     /** Cells stored in row-major order. */
     private Cell[][] array;
@@ -20,6 +23,9 @@ public class GridCanvas extends Canvas {
      * @param size pixels per cell
      */
     public GridCanvas(int rows, int cols, int size) {
+        if (rows <= 0 || cols <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Rows, columns, and cell size must be positive");
+        }
 
         // build 2D array of cells
         array = new Cell[rows][cols];
@@ -75,8 +81,7 @@ public class GridCanvas extends Canvas {
     }
 
     /**
-     * Returns 1 if the cell at (r, c) exists and is on. Returns 0 if the cell
-     * doesn't exist or is off.
+     * Returns 1 if the wrapped cell at (r, c) is on, or 0 if it is off.
      * 
      * @param r row index
      * @param c column index
@@ -86,21 +91,10 @@ public class GridCanvas extends Canvas {
         int rows = numRows();
         int cols = numCols();
         
-        //Adjust r and c to wrap around if out of bounds
-        r = (r + rows) % rows;
-        c = (c + cols) % cols;
-        
-        //check if the cell is on
-        return array[r][c].isOn() ? 1 : 0;
+        r = Math.floorMod(r, rows);
+        c = Math.floorMod(c, cols);
 
-        // try {
-        //     if (array[r][c].isOn()) {
-        //         return 1;
-        //     }
-        // } catch (ArrayIndexOutOfBoundsException e) {
-        //     // cell doesn't exist
-        // }
-        // return 0;
+        return array[r][c].isOn() ? 1 : 0;
     }
 
     /**
@@ -121,6 +115,7 @@ public class GridCanvas extends Canvas {
      * 
      * @param g graphics context
      */
+    @Override 
     public void paint(Graphics g) {
         draw(g);
     }
@@ -132,6 +127,7 @@ public class GridCanvas extends Canvas {
      * 
      * @param g graphics context
      */
+    @Override 
     public void update(Graphics g) {
         draw(g);
     }
@@ -142,15 +138,15 @@ public class GridCanvas extends Canvas {
      * @return the count of "on" cells
      */
     public int countOn() {
-    int count = 0;
-    for (int r = 0; r < numRows(); r++) {
-        for (int c = 0; c < numCols(); c++) {
-            if (array[r][c].isOn()) {
-                count++;
+        int count = 0;
+        for (int r = 0; r < numRows(); r++) {
+            for (int c = 0; c < numCols(); c++) {
+                if (array[r][c].isOn()) {
+                    count++;
+                }
             }
         }
-    }
-    return count;
+        return count;
     }
 
 

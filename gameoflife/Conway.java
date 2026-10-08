@@ -1,8 +1,14 @@
+package gameoflife;
+import java.awt.EventQueue;
 import javax.swing.JFrame;
+import javax.swing.Timer;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Conway's Game of Life.
@@ -12,39 +18,52 @@ import java.util.Scanner;
  */
 public class Conway {
 
+    private static final Logger LOGGER = Logger.getLogger(Conway.class.getName());
     private GridCanvas grid;
 
-    public Conway(String path){
-        try{
-            File file = new File(path);
-            Scanner scan = new Scanner(file);
-
-            ArrayList<String> lines = new ArrayList<>();
-            while(scan.hasNextLine()){
+    public Conway(String path) throws FileNotFoundException {
+        ArrayList<String> lines = new ArrayList<>();
+        try (Scanner scan = new Scanner(new File(path))) {
+            while (scan.hasNextLine()) {
                 String line = scan.nextLine().trim();
-                if(!line.startsWith("!")){ //ignore comments
+                if (!line.startsWith("!") && !line.isEmpty()) {
                     lines.add(line);
                 }
             }
+        }
 
-            //determine grid dimensions
-            int rows = lines.size();
-            int cols = lines.get(0).length();
+        if (lines.isEmpty()) {
+            throw new IllegalArgumentException("Pattern file contains no cell rows: " + path);
+        }
 
-            grid = new GridCanvas(rows, cols, 20);
-
-            for(int r = 0; r < rows; r++){
-                String line = lines.get(r);
-                for(int c = 0; c < cols; c++){
-                    if(line.charAt(c) == 'O'){
-                        grid.turnOn(r, c);//live cell
-                    }
+        int rows = lines.size();
+        int cols = lines.get(0).length();
+        if (cols == 0) {
+            throw new IllegalArgumentException("Pattern rows must not be empty: " + path);
+        }
+        for (int r = 0; r < rows; r++) {
+            String line = lines.get(r);
+            if (line.length() != cols) {
+                throw new IllegalArgumentException("Pattern row " + (r + 1)
+                        + " has " + line.length() + " cells; expected " + cols);
+            }
+            for (int c = 0; c < cols; c++) {
+                char value = line.charAt(c);
+                if (value != '.' && value != 'O') {
+                    throw new IllegalArgumentException("Invalid cell '" + value
+                            + "' at row " + (r + 1) + ", column " + (c + 1));
                 }
             }
+        }
 
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
-            System.exit(1);
+        grid = new GridCanvas(rows, cols, 20);
+        for (int r = 0; r < rows; r++) {
+            String line = lines.get(r);
+            for (int c = 0; c < cols; c++) {
+                if (line.charAt(c) == 'O') {
+                    grid.turnOn(r, c);
+                }
+            }
         }
     }
 
@@ -52,19 +71,13 @@ public class Conway {
      * Creates a grid with two Blinkers.
      */
     public Conway() {
-        // grid = new GridCanvas(5, 10, 20);
-        // grid.turnOn(1, 2);
-        // grid.turnOn(2, 3);
-        // grid.turnOn(3, 1);
-        // grid.turnOn(3, 2);
-        // grid.turnOn(3, 3);
-        
-        // grid.turnOn(2, 1);
-        // grid.turnOn(2, 2);
-        // grid.turnOn(2, 3);
-        // grid.turnOn(1, 7);
-        // grid.turnOn(2, 7);
-        // grid.turnOn(3, 7);
+        grid = new GridCanvas(5, 10, 20);
+        grid.turnOn(2, 1);
+        grid.turnOn(2, 2);
+        grid.turnOn(2, 3);
+        grid.turnOn(1, 7);
+        grid.turnOn(2, 7);
+        grid.turnOn(3, 7);
     }
 
     /**
@@ -154,27 +167,20 @@ public class Conway {
         updateGrid(counts);
     }
 
-    /**
-     * The simulation loop.
-     */
-    private void mainloop() {
-        while (true) {
+    private void show(String title) {
+        JFrame frame = new JFrame(title);
+        frame.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.add(grid);
+        frame.pack();
+        frame.setVisible(true);
 
-            //Count the number of live cells
-            int liveCells = grid.countOn();
-            System.out.println("Live cells: " + liveCells);
-
-            // update the drawing
-            this.update();
+        Timer timer = new Timer(500, event -> {
+            System.out.println("Live cells: " + grid.countOn());
+            update();
             grid.repaint();
-
-            // delay the simulation
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                // do nothing
-            }
-        }
+        });
+        timer.start();
     }
 
     /**
@@ -184,14 +190,24 @@ public class Conway {
      */
     public static void main(String[] args) {
         String title = "Conway's Game of Life";
-        Conway game = new Conway("gliders.cells.txt");
-        JFrame frame = new JFrame(title);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
-        frame.add(game.grid);
-        frame.pack();
-        frame.setVisible(true);
-        game.mainloop();
+        String path;
+        if (args.length > 0) {
+            path = args[0];
+        } else {
+            File localPattern = new File("gliders.cells.txt");
+            path = localPattern.isFile()
+                    ? localPattern.getPath()
+                    : new File("gameoflife", "gliders.cells.txt").getPath();
+        }
+
+        final Conway game;
+        try {
+            game = new Conway(path);
+        } catch (FileNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "Could not read pattern file: " + path, e);
+            return;
+        }
+        EventQueue.invokeLater(() -> game.show(title));
     }
 
 }
