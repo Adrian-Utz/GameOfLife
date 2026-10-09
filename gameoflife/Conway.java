@@ -175,8 +175,8 @@ public class Conway {
         frame.pack();
         frame.setVisible(true);
 
-        Timer timer = new Timer(500, event -> {
-            System.out.println("Live cells: " + grid.countOn());
+        Timer timer = new Timer(50, event -> {
+            //System.out.println("Live cells: " + grid.countOn());
             update();
             grid.repaint();
         });
